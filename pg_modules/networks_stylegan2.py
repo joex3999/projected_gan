@@ -220,7 +220,7 @@ class MappingNetwork(torch.nn.Module):
         if num_ws is not None and w_avg_beta is not None:
             self.register_buffer('w_avg', torch.zeros([w_dim]))
 
-    def forward(self, z, c, truncation_psi=1, truncation_cutoff=None, update_emas=False):
+    def forward(self, z, c, truncation_psi=1, truncation_cutoff=None, update_emas=False,input_is_latent=False):
         # Embed, normalize, and concat inputs.
         x = None
         with torch.autograd.profiler.record_function('input'):
@@ -233,9 +233,11 @@ class MappingNetwork(torch.nn.Module):
                 x = torch.cat([x, y], dim=1) if x is not None else y
 
         # Main layers.
-        for idx in range(self.num_layers):
-            layer = getattr(self, f'fc{idx}')
-            x = layer(x)
+        if not input_is_latent:
+            for idx in range(self.num_layers):
+                layer = getattr(self, f'fc{idx}')
+                x = layer(x)
+        else: x =z ##TODO: tricky part check if it is really working
 
         # Update moving average of W.
         if update_emas and self.w_avg_beta is not None:
